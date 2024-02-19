@@ -15,14 +15,31 @@ defmodule MidiBot.MidiServer do
     {:ok, %{destination: Midiex.open(port), note: note()}}
   end
 
+  def set_midi_device(midi_device) do
+    GenServer.call(@name, {:set_midi_device, midi_device})
+  end
+
+  def get_midi_device do
+    GenServer.call(@name, :get_midi_device)
+  end
+
+  @impl true
+  def handle_call(:get_midi_device, _from, state) do
+    {:reply, state.destination, state}
+  end
+
+  def handle_call({:set_midi_device, midi_device}, _from, state) do
+    [port] = Midiex.ports(midi_device, :output)
+    Process.send_after(self(), :send_midi, Enum.random(20..1000))
+    {:reply, midi_device, %{state | destination: Midiex.open(port)}}
+  end
+
   @impl true
   def handle_info(:send_midi, state) do
     Task.start(fn -> send_note(state) end)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:noreply, %{state | note: note()}}
   end
-
-  # Client functions
 
   @spec note() :: {Midiex.Message.t(), Midiex.Message.t(), integer}
   defp note do
@@ -39,5 +56,3 @@ defmodule MidiBot.MidiServer do
     Midiex.send_msg(state.destination, note_off)
   end
 end
-
-server = MidiBot.MidiServer.start()
