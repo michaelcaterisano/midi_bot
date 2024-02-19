@@ -12,7 +12,7 @@ defmodule MidiBot.MidiServer do
   def init(_state) do
     [port] = Midiex.ports("IAC Driver Bus 1", :output)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:ok, %{out_conn: Midiex.open(port), note: note()}}
+    {:ok, %{destination: Midiex.open(port), note: note()}}
   end
 
   @impl true
@@ -34,9 +34,9 @@ defmodule MidiBot.MidiServer do
 
   defp send_note(state) do
     {note_on, note_off, duration} = state.note
-    Midiex.send_msg(state.out_conn, note_on)
+    Midiex.send_msg(state.destination, note_on)
     :timer.sleep(duration)
-    Midiex.send_msg(state.out_conn, note_off)
+    Midiex.send_msg(state.destination, note_off)
   end
 end
 
