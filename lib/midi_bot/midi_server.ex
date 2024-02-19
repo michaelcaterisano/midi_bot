@@ -1,6 +1,5 @@
 defmodule MidiBot.MidiServer do
   @name :midi_server
-  @send_interval :timer.seconds(1)
 
   use GenServer
 
@@ -12,16 +11,17 @@ defmodule MidiBot.MidiServer do
     [port] = Midiex.ports("IAC Driver Bus 1", :output)
     out_conn = Midiex.open(port)
     state = %{out_conn: out_conn, note: note()}
-    IO.inspect(state, label: "state")
-    Process.send_after(self(), :send_midi, @send_interval)
+    Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:ok, state}
   end
 
   def handle_info(:send_midi, state) do
-    send_note(state)
+    # send note async
+    Task.start(fn -> send_note(state) end)
+
     new_note = note()
     state = %{state | note: new_note}
-    Process.send_after(self(), :send_midi, @send_interval)
+    Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:noreply, state}
   end
 
@@ -29,11 +29,11 @@ defmodule MidiBot.MidiServer do
     Returns a three tuple with a note_on message, a note_off message and a duration
   """
   @spec note() :: {Midiex.Message.t(), Midiex.Message.t(), integer}
-  defp note do
+  def note do
     note_on = Midiex.Message.note_on(Enum.random(40..80), Enum.random(40..80), channel: 1)
     <<_, note, _>> = note_on
     note_off = Midiex.Message.note_off(note, 127, channel: 1)
-    duration = Enum.random(100..1000)
+    duration = 2000
     {note_on, note_off, duration}
   end
 
@@ -44,3 +44,5 @@ defmodule MidiBot.MidiServer do
     Midiex.send_msg(state.out_conn, note_off)
   end
 end
+
+server = MidiBot.MidiServer.start()
