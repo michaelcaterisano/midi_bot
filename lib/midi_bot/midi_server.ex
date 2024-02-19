@@ -1,8 +1,9 @@
 defmodule MidiBot.MidiServer do
   @name :midi_server
-  @note_duration 2000
 
   use GenServer
+
+  alias MidiBot.Note
 
   def start do
     GenServer.start(__MODULE__, %{}, name: @name)
@@ -10,49 +11,49 @@ defmodule MidiBot.MidiServer do
 
   @impl true
   def init(_state) do
-    [port] = Midiex.ports("IAC Driver Bus 1", :output)
+    [port] = Midiex.ports("MRCC 880 Port 1", :output)
+    IO.inspect(port)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:ok, %{destination: Midiex.open(port), note: note()}}
+    {:ok, %{destination: Midiex.open(port), note: Note.new()}}
   end
 
-  def set_midi_device(midi_device) do
-    GenServer.call(@name, {:set_midi_device, midi_device})
+  def set_destination(%{name: name, direction: direction} = destination) do
+    GenServer.call(@name, {:set_destination, destination})
   end
 
-  def get_midi_device do
-    GenServer.call(@name, :get_midi_device)
+  def set_destination(_) do
+    raise "Invalid destination, must pass a map with :name and :direction keys"
+  end
+
+  def get_destination do
+    GenServer.call(@name, :get_destination)
   end
 
   @impl true
-  def handle_call(:get_midi_device, _from, state) do
+  def handle_call(:get_destination, _from, state) do
     {:reply, state.destination, state}
   end
 
-  def handle_call({:set_midi_device, midi_device}, _from, state) do
-    [port] = Midiex.ports(midi_device, :output)
+  def handle_call({:set_destination, destination}, _from, state) do
+    [port] = Midiex.ports(destination.name, destination.direction)
+    IO.inspect(port)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:reply, midi_device, %{state | destination: Midiex.open(port)}}
+    {:reply, destination, %{state | destination: Midiex.open(port)}}
   end
 
   @impl true
   def handle_info(:send_midi, state) do
     Task.start(fn -> send_note(state) end)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:noreply, %{state | note: note()}}
-  end
-
-  @spec note() :: {Midiex.Message.t(), Midiex.Message.t(), integer}
-  defp note do
-    note_on = Midiex.Message.note_on(Enum.random(40..80), Enum.random(40..80), channel: 1)
-    <<_, note, _>> = note_on
-    note_off = Midiex.Message.note_off(note, 127, channel: 1)
-    {note_on, note_off, @note_duration}
+    {:noreply, %{state | note: Note.new()}}
   end
 
   defp send_note(state) do
-    {note_on, note_off, duration} = state.note
+    %{note_on: note_on, note_off: note_off, duration: duration} = state.note
     Midiex.send_msg(state.destination, note_on)
     :timer.sleep(duration)
     Midiex.send_msg(state.destination, note_off)
   end
 end
+
+MidiBot.MidiServer.start()
