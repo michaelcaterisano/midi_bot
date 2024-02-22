@@ -1,10 +1,14 @@
 defmodule MidiBot do
+  use Application
+
   alias MidiBot.MidiServer
 
-  def start do
-    MidiServer.start()
+  def start(_type, _args) do
+    children = [
+      {MidiServer, []}
+    ]
 
-    iac = MidiServer.port_by_name("IAC Driver Bus 1", :output)
-    MidiServer.set_port(iac)
+    opts = [strategy: :one_for_one, name: MidiBot.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end
