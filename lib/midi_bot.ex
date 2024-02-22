@@ -1,18 +1,10 @@
 defmodule MidiBot do
-  @moduledoc """
-  Documentation for `MidiBot`.
-  """
+  alias MidiBot.MidiServer
 
-  @doc """
-  Hello world.
+  def start do
+    MidiServer.start()
 
-  ## Examples
-
-      iex> MidiBot.hello()
-      :world
-
-  """
-  def hello do
-    :world
+    iac = MidiServer.port_by_name("IAC Driver Bus 1", :output)
+    MidiServer.set_port(iac)
   end
 end

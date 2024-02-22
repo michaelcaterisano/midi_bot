@@ -11,34 +11,36 @@ defmodule MidiBot.MidiServer do
 
   @impl true
   def init(_state) do
-    [port] = Midiex.ports("MRCC 880 Port 1", :output)
-    IO.inspect(port)
+    port = port_by_name("IAC Driver Bus 1", :output)
+    IO.inspect(port, label: "Port")
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:ok, %{destination: Midiex.open(port), note: Note.new()}}
+    {:ok, %{port: Midiex.open(port), note: Note.new()}}
   end
 
-  def set_destination(%{name: name, direction: direction} = destination) do
-    GenServer.call(@name, {:set_destination, destination})
+  def set_port(port) do
+    GenServer.call(@name, {:set_port, port})
   end
 
-  def set_destination(_) do
-    raise "Invalid destination, must pass a map with :name and :direction keys"
+  def get_port do
+    GenServer.call(@name, :get_port)
   end
 
-  def get_destination do
-    GenServer.call(@name, :get_destination)
+  def get_ports do
+    Midiex.ports()
+  end
+
+  def port_by_name(name, direction) do
+    Midiex.ports(name, direction) |> List.first()
   end
 
   @impl true
-  def handle_call(:get_destination, _from, state) do
-    {:reply, state.destination, state}
+  def handle_call(:get_port, _from, state) do
+    {:reply, state.port, state}
   end
 
-  def handle_call({:set_destination, destination}, _from, state) do
-    [port] = Midiex.ports(destination.name, destination.direction)
-    IO.inspect(port)
+  def handle_call({:set_port, port}, _from, state) do
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:reply, destination, %{state | destination: Midiex.open(port)}}
+    {:reply, port, %{state | port: Midiex.open(port)}}
   end
 
   @impl true
@@ -50,10 +52,8 @@ defmodule MidiBot.MidiServer do
 
   defp send_note(state) do
     %{note_on: note_on, note_off: note_off, duration: duration} = state.note
-    Midiex.send_msg(state.destination, note_on)
+    Midiex.send_msg(state.port, note_on)
     :timer.sleep(duration)
-    Midiex.send_msg(state.destination, note_off)
+    Midiex.send_msg(state.port, note_off)
   end
 end
-
-MidiBot.MidiServer.start()
