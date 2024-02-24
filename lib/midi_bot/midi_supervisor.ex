@@ -2,6 +2,7 @@ defmodule MidiBot.MidiSupervisor do
   use DynamicSupervisor
 
   def start_link(init_arg) do
+    IO.inspect("starting midi supervisor")
     DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 

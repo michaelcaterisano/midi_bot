@@ -5,10 +5,8 @@ defmodule MidiBot.MidiServer do
 
   alias MidiBot.Note
 
- 
-
   def start_link(args) do
-    IO.inspect("Starting the Midi Server")
+    IO.inspect("starting midi server")
     GenServer.start_link(__MODULE__, %{port_name: args.port_name})
   end
 
