@@ -5,9 +5,11 @@ defmodule MidiBot.MidiServer do
 
   alias MidiBot.Note
 
+ 
+
   def start_link(args) do
     IO.inspect("Starting the Midi Server")
-    GenServer.start_link(__MODULE__, %{port_name: args.port_name}, name: args.server_name)
+    GenServer.start_link(__MODULE__, %{port_name: args.port_name})
   end
 
   @impl true
@@ -52,5 +54,9 @@ defmodule MidiBot.MidiServer do
     Midiex.send_msg(state.port, note_on)
     :timer.sleep(duration)
     Midiex.send_msg(state.port, note_off)
+  end
+
+  def random_string do
+    :crypto.strong_rand_bytes(8) |> Base.encode16()
   end
 end

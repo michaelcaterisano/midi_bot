@@ -9,10 +9,10 @@ defmodule MidiBot.MidiSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  def start_midi_server(port_name, server_name) do
+  def start_midi_server(port_name) do
     DynamicSupervisor.start_child(
       __MODULE__,
-      {MidiBot.MidiServer, %{port_name: port_name, server_name: server_name}}
+      {MidiBot.MidiServer, %{port_name: port_name}}
     )
   end
 end
