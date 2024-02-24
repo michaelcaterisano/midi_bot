@@ -15,4 +15,8 @@ defmodule MidiBot.MidiSupervisor do
       {MidiBot.MidiServer, %{port_name: port_name}}
     )
   end
+
+  def start_midi_servers(n, port_name) do
+    Enum.each(1..n, fn _ -> start_midi_server(port_name) end)
+  end
 end
