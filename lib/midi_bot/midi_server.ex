@@ -42,7 +42,6 @@ defmodule MidiBot.MidiServer do
 
   @impl true
   def handle_info(:send_midi, state) do
-    IO.inspect("Sending Midi from the server whose pid is #{inspect(self())}")
     Task.start(fn -> send_note(state) end)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:noreply, %{state | note: Note.new()}}
