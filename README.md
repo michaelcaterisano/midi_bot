@@ -2,6 +2,11 @@
 
 **TODO: Add description**
 
+MidiBot.start(nil, nil)
+MidiBot.MidiSupervisor.start_midi_server("IAC Driver Bus 1")
+
+enjoy
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
