@@ -41,9 +41,17 @@ defmodule MidiBot.MidiServer do
   end
 
   @impl true
-  def handle_info(:send_midi, state) do
+  def handle_cast(:send_midi, state) do
+    IO.inspect("sending midi")
     Task.start(fn -> send_note(state) end)
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
+    {:noreply, %{state | note: Note.new()}}
+  end
+
+  @impl true
+  def handle_info(:send_midi, state) do
+    Task.start(fn -> send_note(state) end)
+    # Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:noreply, %{state | note: Note.new()}}
   end
 
@@ -52,9 +60,5 @@ defmodule MidiBot.MidiServer do
     Midiex.send_msg(state.port, note_on)
     :timer.sleep(duration)
     Midiex.send_msg(state.port, note_off)
-  end
-
-  def random_string do
-    :crypto.strong_rand_bytes(8) |> Base.encode16()
   end
 end
