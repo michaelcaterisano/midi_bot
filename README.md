@@ -1,9 +1,14 @@
 # MidiBot
 
-**TODO: Add description**
+iex -S mix
 
-MidiBot.start(nil, nil)
-MidiBot.MidiSupervisor.start_midi_server("IAC Driver Bus 1")
+# start a midi server, passing the midiport two which Midiex should send messages. Defaults to an :output port.
+{:ok, pid} = MidiBot.start_midi_server("IAC Driver Bus 1")
+
+# trigger midiserver to send a note to its port
+GenServer.cast(pid, :send_midi)
+
+
 
 enjoy
 
