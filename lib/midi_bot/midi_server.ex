@@ -4,44 +4,26 @@ defmodule MidiBot.MidiServer do
   alias MidiBot.Note
 
   def start_link(args) do
-    GenServer.start_link(__MODULE__, %{name: args[:reference_name]}, name: args[:name])
+    GenServer.start_link(__MODULE__, %{conn: args[:conn]}, name: args[:name])
   end
 
   @impl true
   def init(state) do
-    intial_note = Note.new()
-    virtual_output = Midiex.create_virtual_output(state[:name] |> to_string())
+    note = Note.new()
     Process.send_after(self(), :send_midi, Enum.random(20..1000))
-    {:ok, %{port: virtual_output, note: intial_note}}
-  end
-
-  def set_port(name, direction) do
-    port = Midiex.ports(name, direction) |> List.first()
-    GenServer.call(self(), {:set_port, port})
-  end
-
-  def get_port do
-    GenServer.call(self(), :get_port)
-  end
-
-  def get_ports do
-    Midiex.ports()
+    {:ok, %{conn: state.conn, note: note}}
   end
 
   @impl true
-  def handle_call(:get_port, _from, state) do
-    {:reply, state.port, state}
-  end
-
-  def handle_call({:set_port, port}, _from, state) do
-    {:reply, port, %{state | port: Midiex.open(port)}}
+  def handle_call(:get_conn, _from, state) do
+    {:reply, state.conn, state}
   end
 
   @impl true
-  def handle_call(:send_midi, _from, state) do
+  def handle_cast(:send_midi, state) do
     Task.start(fn -> send_note(state) end)
-    new_state = %{state | note: Note.new()}
-    {:reply, new_state, new_state}
+    state = %{state | note: Note.new()}
+    {:noreply, state}
   end
 
   @impl true
@@ -55,8 +37,8 @@ defmodule MidiBot.MidiServer do
 
   defp send_note(state) do
     %{note_on: note_on, note_off: note_off, duration: duration} = state.note
-    Midiex.send_msg(state.port, note_on)
+    Midiex.send_msg(state.conn, note_on)
     :timer.sleep(duration)
-    Midiex.send_msg(state.port, note_off)
+    Midiex.send_msg(state.conn, note_off)
   end
 end
