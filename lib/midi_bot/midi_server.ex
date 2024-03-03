@@ -4,19 +4,15 @@ defmodule MidiBot.MidiServer do
   alias MidiBot.Note
 
   def start_link(args) do
-    IO.inspect(args, label: "args")
-    IO.inspect("starting midi server")
-
-    GenServer.start_link(__MODULE__, %{port: args[:port], direction: args[:direction]},
-      name: args[:name]
-    )
+    GenServer.start_link(__MODULE__, %{name: args[:reference_name]}, name: args[:name])
   end
 
   @impl true
   def init(state) do
-    port = Midiex.ports(state.port, state.direction) |> List.first()
     intial_note = Note.new()
-    {:ok, %{port: Midiex.open(port), note: intial_note}}
+    virtual_output = Midiex.create_virtual_output(state[:name] |> to_string())
+    Process.send_after(self(), :send_midi, Enum.random(20..1000))
+    {:ok, %{port: virtual_output, note: intial_note}}
   end
 
   def set_port(name, direction) do
@@ -51,7 +47,9 @@ defmodule MidiBot.MidiServer do
   @impl true
   def handle_info(:send_midi, state) do
     Task.start(fn -> send_note(state) end)
-    # Process.send_after(self(), :send_midi, Enum.random(20..1000))
+
+    # send a new note in a loop after the previous note has been sent
+    Process.send_after(self(), :send_midi, Enum.random(20..1000))
     {:noreply, %{state | note: Note.new()}}
   end
 

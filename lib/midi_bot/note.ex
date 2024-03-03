@@ -6,7 +6,7 @@ defmodule MidiBot.Note do
 
   def new do
     note_on =
-      Midiex.Message.note_on(Enum.random(40..80), Enum.random(40..80), channel: 0) |> IO.inspect()
+      Midiex.Message.note_on(Enum.random(40..80), Enum.random(40..80), channel: 0)
 
     <<_, note, _>> = note_on
     note_off = Midiex.Message.note_off(note, 127, channel: 0)
